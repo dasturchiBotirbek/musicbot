@@ -70,7 +70,7 @@ async def _send_audio(message: Message, result: downloader.DownloadResult) -> No
         audio=file,
         title=result.title[:60] if result.title else None,
         performer=(result.uploader or "YouTube")[:60],
-        duration=result.duration or 0,
+        duration=int(result.duration or 0),
         caption=f"🎵 <b>{result.title}</b>" if result.title else None,
     )
 
@@ -80,7 +80,7 @@ async def _send_video(message: Message, result: downloader.DownloadResult) -> No
     await message.answer_video(
         video=file,
         caption=f"🎬 <b>{result.title}</b>" if result.title else None,
-        duration=result.duration or 0,
+        duration=int(result.duration or 0),
         supports_streaming=True,
     )
 

@@ -31,6 +31,16 @@ class DownloadResult:
     uploader: str | None
 
 
+def _to_int(value) -> int | None:
+    """yt-dlp ba'zida duration'ni float qaytaradi (masalan 22.623). aiogram int kutadi."""
+    if value is None:
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
 def _run_ydl(opts: dict, url: str) -> tuple[dict, str]:
     """Sync funksiya — yt-dlp'ni ishga tushiradi va info qaytaradi."""
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -94,7 +104,7 @@ async def download_youtube_audio(url: str, download_dir: Path) -> DownloadResult
     return DownloadResult(
         file_path=p,
         title=info.get("title") or "audio",
-        duration=info.get("duration"),
+        duration=_to_int(info.get("duration")),
         webpage_url=info.get("webpage_url"),
         thumbnail=info.get("thumbnail"),
         uploader=info.get("uploader") or info.get("channel"),
@@ -126,7 +136,7 @@ async def download_youtube_video(url: str, download_dir: Path) -> DownloadResult
     return DownloadResult(
         file_path=p,
         title=info.get("title") or "video",
-        duration=info.get("duration"),
+        duration=_to_int(info.get("duration")),
         webpage_url=info.get("webpage_url"),
         thumbnail=info.get("thumbnail"),
         uploader=info.get("uploader") or info.get("channel"),
@@ -146,7 +156,7 @@ async def download_instagram(url: str, download_dir: Path) -> DownloadResult:
     return DownloadResult(
         file_path=p,
         title=info.get("title") or info.get("description") or "instagram",
-        duration=info.get("duration"),
+        duration=_to_int(info.get("duration")),
         webpage_url=info.get("webpage_url") or url,
         thumbnail=info.get("thumbnail"),
         uploader=info.get("uploader") or info.get("channel"),
