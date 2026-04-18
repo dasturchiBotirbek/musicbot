@@ -1,0 +1,65 @@
+"""Loyiha konfiguratsiyasi (.env faylidan o'qiladi)."""
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
+
+def _parse_admin_ids(raw: str) -> list[int]:
+    ids: list[int] = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            ids.append(int(part))
+        except ValueError:
+            continue
+    return ids
+
+
+@dataclass(frozen=True)
+class Settings:
+    bot_token: str
+    admin_ids: list[int]
+    db_path: Path
+    download_dir: Path
+    max_file_size_mb: int
+    max_forced_channels: int = 10
+
+
+def load_settings() -> Settings:
+    token = os.getenv("BOT_TOKEN", "").strip()
+    if not token or token == "YOUR_BOT_TOKEN_HERE":
+        raise RuntimeError(
+            "BOT_TOKEN o'rnatilmagan! Iltimos, .env faylida BOT_TOKEN ni @BotFather bergan token bilan almashtiring."
+        )
+
+    admins = _parse_admin_ids(os.getenv("ADMIN_IDS", ""))
+    if not admins:
+        raise RuntimeError(
+            "ADMIN_IDS ko'rsatilmagan! .env faylida kamida bitta admin Telegram user ID ni kiriting."
+        )
+
+    db_path = BASE_DIR / os.getenv("DB_PATH", "bot.db")
+    download_dir = BASE_DIR / os.getenv("DOWNLOAD_DIR", "downloads")
+    download_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        max_mb = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
+    except ValueError:
+        max_mb = 50
+
+    return Settings(
+        bot_token=token,
+        admin_ids=admins,
+        db_path=db_path,
+        download_dir=download_dir,
+        max_file_size_mb=max_mb,
+    )
