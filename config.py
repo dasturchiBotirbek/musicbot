@@ -1,7 +1,9 @@
 """Loyiha konfiguratsiyasi (.env faylidan o'qiladi)."""
 from __future__ import annotations
 
+import base64
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -9,6 +11,26 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
+
+
+def _repair_netscape_cookies(raw: str) -> str:
+    """Ba'zi platformalar (Railway, Heroku) env variable'dagi TAB belgilarini
+    bo'sh joylarga aylantiradi. Netscape cookies fayli TAB bilan ajratilgan
+    maydonlarga ega (7 ta maydon qator boshiga qarab). Qatordagi ketma-ket
+    bo'sh joylarni TAB'ga qaytaradi.
+    """
+    fixed_lines: list[str] = []
+    for line in raw.splitlines():
+        if not line or line.startswith("#"):
+            fixed_lines.append(line)
+            continue
+        if "\t" in line:
+            fixed_lines.append(line)
+            continue
+        # TAB yo'q — ehtimol bo'sh joylarga aylantirilgan. Ketma-ket 1+ bo'sh joyni TAB bilan almashtiramiz.
+        repaired = re.sub(r" +", "\t", line)
+        fixed_lines.append(repaired)
+    return "\n".join(fixed_lines) + "\n"
 
 
 def _parse_admin_ids(raw: str) -> list[int]:
@@ -58,10 +80,23 @@ def load_settings() -> Settings:
         max_mb = 50
 
     cookies_path: Path | None = None
-    cookies_raw = os.getenv("INSTAGRAM_COOKIES", "").strip()
-    if cookies_raw:
+    cookies_content: str | None = None
+
+    cookies_b64 = os.getenv("INSTAGRAM_COOKIES_B64", "").strip()
+    if cookies_b64:
+        try:
+            cookies_content = base64.b64decode(cookies_b64).decode("utf-8")
+        except Exception:
+            cookies_content = None
+
+    if not cookies_content:
+        cookies_raw = os.getenv("INSTAGRAM_COOKIES", "").strip()
+        if cookies_raw:
+            cookies_content = _repair_netscape_cookies(cookies_raw)
+
+    if cookies_content:
         cookies_path = BASE_DIR / ".instagram_cookies.txt"
-        cookies_path.write_text(cookies_raw, encoding="utf-8")
+        cookies_path.write_text(cookies_content, encoding="utf-8")
     else:
         env_path = os.getenv("INSTAGRAM_COOKIES_FILE", "").strip()
         if env_path:
