@@ -143,7 +143,11 @@ async def download_youtube_video(url: str, download_dir: Path) -> DownloadResult
     )
 
 
-async def download_instagram(url: str, download_dir: Path) -> DownloadResult:
+async def download_instagram(
+    url: str,
+    download_dir: Path,
+    cookies_file: Path | None = None,
+) -> DownloadResult:
     outtmpl = _make_outtmpl(download_dir)
     opts = {
         "format": "best",
@@ -151,6 +155,8 @@ async def download_instagram(url: str, download_dir: Path) -> DownloadResult:
         "quiet": True,
         "no_warnings": True,
     }
+    if cookies_file and cookies_file.exists():
+        opts["cookiefile"] = str(cookies_file)
     info, file_path = await _run_in_thread(opts, url)
     p = Path(file_path)
     return DownloadResult(

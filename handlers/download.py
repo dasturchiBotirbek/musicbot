@@ -189,7 +189,9 @@ async def _download_and_send(
         elif source == "youtube_video":
             result = await downloader.download_youtube_video(url, settings.download_dir)
         elif source == "instagram":
-            result = await downloader.download_instagram(url, settings.download_dir)
+            result = await downloader.download_instagram(
+                url, settings.download_dir, cookies_file=settings.instagram_cookies_file
+            )
         else:
             await status.edit_text(t("download_error", lang, err="unknown source"))
             return

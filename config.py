@@ -32,6 +32,7 @@ class Settings:
     download_dir: Path
     max_file_size_mb: int
     max_forced_channels: int = 10
+    instagram_cookies_file: Path | None = None
 
 
 def load_settings() -> Settings:
@@ -56,10 +57,23 @@ def load_settings() -> Settings:
     except ValueError:
         max_mb = 50
 
+    cookies_path: Path | None = None
+    cookies_raw = os.getenv("INSTAGRAM_COOKIES", "").strip()
+    if cookies_raw:
+        cookies_path = BASE_DIR / ".instagram_cookies.txt"
+        cookies_path.write_text(cookies_raw, encoding="utf-8")
+    else:
+        env_path = os.getenv("INSTAGRAM_COOKIES_FILE", "").strip()
+        if env_path:
+            p = Path(env_path)
+            if p.exists():
+                cookies_path = p
+
     return Settings(
         bot_token=token,
         admin_ids=admins,
         db_path=db_path,
         download_dir=download_dir,
         max_file_size_mb=max_mb,
+        instagram_cookies_file=cookies_path,
     )
